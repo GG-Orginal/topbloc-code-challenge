@@ -36,14 +36,6 @@ class Candy {
     }
 }
 
-class CandyList{
-    List<Candy> list;
-    //getter and setter
-    public List<Candy> getList(){
-        return list;
-    }
-}
-
 class Item {
     String name;
     long id;
@@ -91,7 +83,10 @@ class Distributor {
 
 public class Main {
 
-    // Read from Distributors file
+    /**
+     * Read from Distributors files
+     * @return List of distributor objects
+     */
     private static List<Distributor> distrInv(){
         FileInputStream file =
                 null;
@@ -149,7 +144,10 @@ public class Main {
         return null;
     }
 
-    // Read from Inventory file
+    /**
+     * Read from Inventory file
+     * @return Candy List
+     */
     private static List<Candy> candyStock(){
         FileInputStream file =
                 null;
@@ -194,35 +192,44 @@ public class Main {
         return null;
     }
 
+    /**
+     * Return the lowest price of Candy c among all the distributors, result is not rounded
+     * @param c Candy whose price you want to check
+     * @return
+     */
     private static double lowestCostAmongDistributors(Candy c){
 
+        // Get all distrbutors from xlsx file as java list
         List<Distributor> distr = distrInv();
 
         double minCost = 10000.0;
 
+        // Loop through all distributors
         for (Distributor d: distr) {
 
             //Equals is overriden to match against SKU/id and name
+            // comparison item is an object of type Item created from the given Candy c
+            // cost doesn't matter since we are only using it to match the name and id below
             Item comparisonItem = new Item(c.name,c.id,0.0);
 
             if(d.inv.contains(comparisonItem)){
                 //get cost of item at index where the comparisonItem matches
                 double cost = d.inv.get(d.inv.indexOf(comparisonItem)).cost;
-                System.out.println("###################");
-                System.out.println("cost: " + cost);
-                System.out.println("name: " + comparisonItem.name);
 
                 if(cost < minCost){
                     minCost = cost;
-
                 }
             }
         }
 
         return minCost;
-
     }
 
+    /**
+     * Find the lowest total restock price of a list of candies with given quantities
+     * @param candies Candy List
+     * @return tptal cost - not rounded
+     */
     private static double lowTotalRestockCost(List<Candy> candies){
 
         double totalCost = 0;
@@ -236,8 +243,6 @@ public class Main {
 
     public static void main(String[] args) {
 
-        List<Candy> candies = candyStock();
-//        List<Distributor> distr = distrInv();
         //This is required to allow GET and POST requests with the header 'content-type'
         options("/*",
                 (request, response) -> {
@@ -254,53 +259,43 @@ public class Main {
         //This is required to allow the React app to communicate with this API
         before((request, response) -> response.header("Access-Control-Allow-Origin", "http://localhost:3000"));
 
-        //TODO: Return JSON containing the candies for which the stock is less than 25% of it's capacity
+        //Returns JSON containing the candies for which the stock is less than 25% of it's capacity
         get("/low-stock", (request, response) -> {
 
             response.type("application/json");
 
-
             List<Candy> candies1 = candyStock();
             List<Candy> lowStock = new ArrayList<>();
 
+            // Loop through entire stock of candies
             for (Candy c: candies1){
+                // if the stock is less than 25% capacity add it to low stock list
                 if((((double) c.stock)/ ((double) c.capacity)) < 0.25){
-                    System.out.println("Low on: + " + c.name);
-                    System.out.println("stock: " + (c.stock));
-                    System.out.println("cap: " + (c.capacity));
-                    System.out.println((c.stock/c.capacity));
                     lowStock.add(c);
                 }
             }
 
+            // convert lowstock list to jason
             String json = new Gson().toJson(lowStock);
 
-            //response.body(json);
-            //System.out.println(response.body());
-//            JsonObject jo = new JsonObject();
-//            jo.put();
             return json;
         });
 
-        //TODO: Return JSON containing the total cost of restocking candy
+        //Returns JSON containing the total cost of restocking candy
         post("/restock-cost", (request, response) -> {
 
-            System.out.println(request.body());
-
+            // Parse request body
             JsonParser parser = new JsonParser();
             JsonObject json1 = (JsonObject) parser.parse(request.body());
-
             String clist = json1.get("items").toString();
 
+            // convert json list to java
             Gson gson = new Gson();
             Type listType = new TypeToken<ArrayList<Candy>>() {}.getType();
-            ArrayList<Candy> c5 = new Gson().fromJson(clist, listType);
+            ArrayList<Candy> candies = new Gson().fromJson(clist, listType);
 
-            System.out.println("bruh");
-            System.out.println(c5.getClass());
-            System.out.println(c5);
 
-            double cost = lowTotalRestockCost(c5);
+            double cost = lowTotalRestockCost(candies);
             cost = Math.round(cost * 100.0) / 100.0;
             System.out.println(cost);
 
