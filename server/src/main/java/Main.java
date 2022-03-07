@@ -79,7 +79,7 @@ class Distributor {
 public class Main {
 
     /**
-     * Read from Distributors files
+     * Read from Distributors file, works for unlimited number of distributors
      * @return List of distributor objects
      */
     private static List<Distributor> distrInv(){
@@ -95,7 +95,7 @@ public class Main {
             //list of distribtors who each have their own list of items
             List<Distributor> distr = new ArrayList<Distributor>();
 
-            for (int d = 0; d < 3; d++) {
+            for (int d = 0; d < workbook.getNumberOfSheets(); d++) {
 
                 XSSFSheet sheet = workbook.getSheetAt(d);
                 Iterator<Row> rowIterator = sheet.iterator();
